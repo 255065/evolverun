@@ -19,6 +19,7 @@ will not retry against an authenticated route.
 from __future__ import annotations
 
 import logging
+import time
 from datetime import datetime, timezone
 from typing import Annotated, Any
 
@@ -101,6 +102,17 @@ class StatusResponse(BaseModel):
     current_period_end: datetime | None
     customer_id: str | None
     has_subscription: bool
+
+
+class PriceInfo(BaseModel):
+    unit_amount: int  # smallest currency unit (e.g. cents)
+    currency: str
+    interval: str  # "month" | "year"
+
+
+class PricesResponse(BaseModel):
+    monthly: PriceInfo | None
+    yearly: PriceInfo | None
 
 
 # ---- Endpoints ----------------------------------------------------------
@@ -189,6 +201,63 @@ def billing_status(
         customer_id=data.get("stripe_customer_id"),
         has_subscription=sub_status in {"active", "trialing"},
     )
+
+
+# ---- Live prices --------------------------------------------------------
+
+# The displayed price amounts come straight from Stripe so the site never
+# drifts from the real prices. Cache the lookup — prices change rarely and we
+# don't want a Stripe round-trip on every (unauthenticated) page render.
+_PRICES_TTL_SECONDS = 300
+_prices_cache: tuple[float, PricesResponse] | None = None
+
+
+def _fetch_price(price_id: str) -> PriceInfo | None:
+    """Pull a single price's display info from Stripe, or None if the id is
+    unset or the lookup fails (a Stripe outage must not break page render)."""
+    if not price_id:
+        return None
+    try:
+        price = stripe.Price.retrieve(price_id)
+    except stripe.StripeError as exc:
+        log.warning("Stripe price fetch failed for %s: %s", price_id, exc)
+        return None
+    recurring = price.get("recurring") or {}
+    interval = recurring.get("interval")
+    if price.get("unit_amount") is None or not interval:
+        return None
+    return PriceInfo(
+        unit_amount=price["unit_amount"],
+        currency=price["currency"],
+        interval=interval,
+    )
+
+
+@router.get("/prices", response_model=PricesResponse)
+def get_prices(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> PricesResponse:
+    """Public: the live monthly/yearly amounts for the pricing UI.
+
+    Returns nulls (not an error) when Stripe isn't configured or a price can't
+    be read, so the frontend falls back to its static defaults.
+    """
+    global _prices_cache
+    now = time.monotonic()
+    if _prices_cache and now - _prices_cache[0] < _PRICES_TTL_SECONDS:
+        return _prices_cache[1]
+
+    if not settings.stripe_secret_key:
+        return PricesResponse(monthly=None, yearly=None)
+
+    stripe.api_key = settings.stripe_secret_key
+    stripe.api_version = "2024-12-18.acacia"
+    result = PricesResponse(
+        monthly=_fetch_price(settings.stripe_price_id),
+        yearly=_fetch_price(settings.stripe_price_id_yearly),
+    )
+    _prices_cache = (now, result)
+    return result
 
 
 # ---- Webhook ------------------------------------------------------------

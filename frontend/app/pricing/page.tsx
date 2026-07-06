@@ -1,5 +1,7 @@
 import "../_landing/landing.css";
 import Link from "next/link";
+import { loadPrices } from "@/app/dashboard/account/actions";
+import { derivePlanDisplay } from "@/app/dashboard/account/plan-pricing";
 import { Nav } from "../_landing/nav";
 import { CTA, Footer } from "../_landing/sections";
 import { Check } from "../_landing/icons";
@@ -10,13 +12,6 @@ const MONTHLY_FEATS = [
   "Full Strava history, synced automatically",
   "Load, recovery & trend analysis",
   "Adaptive week and race plans",
-  "Cancel anytime in Stripe",
-];
-
-const ANNUAL_FEATS = [
-  "Everything in Pro Monthly",
-  "Just ~€5.75 / month",
-  "Year-round training context",
   "Cancel anytime in Stripe",
 ];
 
@@ -43,7 +38,14 @@ const INCLUDES = [
   },
 ];
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const price = derivePlanDisplay(await loadPrices());
+  const annualFeats = [
+    "Everything in Pro Monthly",
+    `Just ~${price.yearlyPerMonth} / month`,
+    "Year-round training context",
+    "Cancel anytime in Stripe",
+  ];
   return (
     <div className="evr-landing">
       <RevealController />
@@ -74,7 +76,7 @@ export default function PricingPage() {
             <div className="plan-kicker">EvolveRun</div>
             <div className="plan-name">Pro Monthly</div>
             <div className="plan-price">
-              <span className="amt">€7.99</span>
+              <span className="amt">{price.monthly}</span>
               <span className="per">per month</span>
             </div>
             <p className="plan-desc">
@@ -103,15 +105,15 @@ export default function PricingPage() {
             <div className="plan-kicker">EvolveRun</div>
             <div className="plan-name">Pro Annual</div>
             <div className="plan-price">
-              <span className="amt">€69</span>
+              <span className="amt">{price.yearlyTotal}</span>
               <span className="per">per year</span>
             </div>
-            <p className="plan-sub">Just ~€5.75 / month</p>
+            <p className="plan-sub">Just ~{price.yearlyPerMonth} / month</p>
             <p className="plan-desc">
               Best for athletes using AI training context throughout the season.
             </p>
             <ul className="plan-feats">
-              {ANNUAL_FEATS.map((f) => (
+              {annualFeats.map((f) => (
                 <li key={f}>
                   <Check /> {f}
                 </li>

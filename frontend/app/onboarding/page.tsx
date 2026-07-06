@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { logoutAction } from "@/app/(auth)/actions";
-import { startCheckoutAction } from "@/app/dashboard/account/actions";
+import { PlanPicker } from "@/app/dashboard/account/plan-picker";
 import {
   connectProviderAction,
   getConnectionStatus,
@@ -84,67 +84,64 @@ export default async function OnboardingPage({
       </header>
 
       <main className="flex flex-1 items-center justify-center px-4 pb-16">
-        <div className="w-full max-w-md">
-          {connected ? (
-            /* ─── Connected: sell the quantity, then the hard paywall ─── */
-            <div className="rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
-              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#dc6b3f]">
-                ● Ready
+        {connected ? (
+          /* ─── Connected: Strava logo + synced count, then the two-card paywall ─── */
+          <div className="w-full max-w-2xl">
+            <div className="text-center">
+              {/* Strava logo + connection status */}
+              <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1 text-[12px] font-medium text-neutral-700 shadow-sm">
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-[#fc4c02]" fill="currentColor">
+                  <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+                </svg>
+                Strava connected
               </div>
 
+              {/* Synced activity count */}
               {activityCount > 0 ? (
-                <div className="mt-4 rounded-xl border border-neutral-200 bg-[#fbfaf7] px-5 py-4">
-                  <div className="flex items-baseline gap-2">
-                    <span className="evr-headline text-[40px] leading-none tracking-[-0.03em]">
+                <div className="mt-5">
+                  <div className="flex items-baseline justify-center gap-2">
+                    <span className="evr-headline text-[52px] leading-none tracking-[-0.03em]">
                       {activityCount.toLocaleString("en-GB")}
                     </span>
-                    <span className="text-[15px] font-medium text-neutral-600">activities</span>
+                    <span className="text-[17px] font-medium text-neutral-600">
+                      activities synced
+                    </span>
                   </div>
-                  {span && <p className="mt-1 text-[13px] text-neutral-500">{span}, synced ✓</p>}
+                  {span && <p className="mt-1.5 text-[13.5px] text-neutral-500">{span} ✓</p>}
                 </div>
               ) : (
-                <div className="mt-4 rounded-xl border border-neutral-200 bg-[#fbfaf7] px-5 py-4 text-[14px] text-neutral-600">
+                <p className="mt-5 text-[15px] text-neutral-600">
                   Strava connected — importing your history now.
-                </div>
+                </p>
               )}
 
               <h1 className="evr-headline mt-6 text-[30px] tracking-[-0.03em]">
-                Your coach is ready.
+                Your AI coach is ready.
               </h1>
-              <p className="mt-2 text-[14.5px] text-neutral-600">
-                It&apos;s all loaded and waiting. Unlock EvolveRun to start asking your coach
+              <p className="mx-auto mt-2 max-w-md text-[14.5px] text-neutral-600">
+                It&apos;s all loaded and waiting. Choose a plan to start asking your coach
                 anything about your training.
               </p>
 
               {syncFailed && (
-                <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-900">
+                <p className="mx-auto mt-4 max-w-md rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-900">
                   Your first sync hit a snag — you can retry it from Connections once you&apos;re in.
                   You can still subscribe now.
                 </p>
               )}
-
-              <form action={startCheckoutAction.bind(null, "monthly")} className="mt-6">
-                <button
-                  type="submit"
-                  className="inline-flex w-full items-center justify-center rounded-md bg-neutral-950 px-5 py-3 text-[14px] font-medium text-white shadow-sm transition hover:bg-neutral-800"
-                >
-                  Unlock your coach — €7.99/mo
-                </button>
-              </form>
-              <form action={startCheckoutAction.bind(null, "yearly")} className="mt-2">
-                <button
-                  type="submit"
-                  className="inline-flex w-full items-center justify-center rounded-md border border-neutral-300 bg-white px-5 py-2.5 text-[13px] font-medium text-neutral-950 transition hover:bg-neutral-50"
-                >
-                  or €69 / year — save ~28%
-                </button>
-              </form>
-              <p className="mt-4 text-center text-[12px] text-neutral-400">
-                Cancel anytime · secured by Stripe
-              </p>
             </div>
-          ) : (
-            /* ─── Not connected: promise the value, connect Strava ─── */
+
+            {/* Two-card monthly / yearly paywall */}
+            <div className="mt-8">
+              <PlanPicker />
+            </div>
+            <p className="mt-4 text-center text-[12px] text-neutral-400">
+              Cancel anytime · secured by Stripe
+            </p>
+          </div>
+        ) : (
+          /* ─── Not connected: promise the value, connect Strava ─── */
+          <div className="w-full max-w-md">
             <div className="rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
               <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#dc6b3f]">
                 ● Setting up
@@ -180,8 +177,8 @@ export default async function OnboardingPage({
                 Encrypted with Fernet · read-only · disconnect anytime
               </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -11,6 +11,11 @@ mirror of git history — see `CLAUDE.md` for what to log and what to skip.
 ## [Unreleased]
 
 ### Added
+- **Price tags read live from Stripe.** New public `GET /billing/prices` returns the
+  monthly/yearly amounts; the paywall picker, account page, and `/pricing` now render
+  the real prices (plus the derived per-month figure and savings %), so a Stripe price
+  change shows up without a redeploy. Cached ~5 min; falls back to static defaults if
+  Stripe is unreachable.
 - **Onboarding funnel**: new signups now flow **signup → confirm email →
   `/onboarding` (connect Strava, *before* payment) → hard paywall → dashboard**.
   The connect step shows only the *quantity* of synced history ("N activities ·

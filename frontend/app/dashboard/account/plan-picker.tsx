@@ -1,4 +1,5 @@
-import { startCheckoutAction } from "./actions";
+import { loadPrices, startCheckoutAction } from "./actions";
+import { derivePlanDisplay } from "./plan-pricing";
 
 // Shown on the paywall right after signup so a new user picks a plan before the
 // dashboard. Each card binds the plan into the checkout server action, so the
@@ -14,7 +15,7 @@ const MONTHLY_FEATS = [
 
 const ANNUAL_FEATS = [
   "Everything in Pro Monthly",
-  "Best value — about €5.75 / month",
+  "Unlimited AI coach conversations",
   "Year-round training context",
   "Cancel anytime",
 ];
@@ -32,7 +33,8 @@ const DARK_BTN =
 const OUTLINE_BTN =
   "inline-flex w-full items-center justify-center rounded-md border border-neutral-300 bg-white px-5 py-2.5 text-[13px] font-medium text-neutral-950 transition hover:bg-neutral-50";
 
-export function PlanPicker() {
+export async function PlanPicker() {
+  const price = derivePlanDisplay(await loadPrices());
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {/* Pro Monthly */}
@@ -41,7 +43,7 @@ export function PlanPicker() {
           Pro Monthly
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-[32px] font-semibold tracking-[-0.02em]">€7.99</span>
+          <span className="text-[32px] font-semibold tracking-[-0.02em]">{price.monthly}</span>
           <span className="text-[14px] text-neutral-500">/ month</span>
         </div>
         <p className="mt-2 text-[13.5px] text-neutral-600">Full Pro access. Cancel anytime.</p>
@@ -69,10 +71,12 @@ export function PlanPicker() {
           Pro Annual
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-[32px] font-semibold tracking-[-0.02em]">€69</span>
-          <span className="text-[14px] text-neutral-500">/ year</span>
+          <span className="text-[32px] font-semibold tracking-[-0.02em]">{price.yearlyPerMonth}</span>
+          <span className="text-[14px] text-neutral-500">/ month</span>
         </div>
-        <p className="mt-1 text-[13px] font-medium text-emerald-700">≈ €5.75 / month</p>
+        <p className="mt-1 text-[13px] font-medium text-emerald-700">
+          {price.yearlyTotal} billed yearly · save ~{price.savingsPercent}%
+        </p>
         <p className="mt-2 text-[13.5px] text-neutral-600">Best for year-round training.</p>
         <ul className="mt-4 space-y-2 text-[13.5px] text-neutral-700">
           {ANNUAL_FEATS.map((f) => (

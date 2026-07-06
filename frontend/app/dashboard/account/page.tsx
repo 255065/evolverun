@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { loadBillingStatus, openBillingPortalAction } from "./actions";
+import { loadBillingStatus, loadPrices, openBillingPortalAction } from "./actions";
 import { ChangePasswordForm } from "./change-password-form";
 import { DeleteAccountButton } from "./delete-button";
 import { PlanPicker } from "./plan-picker";
+import { derivePlanDisplay } from "./plan-pricing";
 import { ProfileForm } from "./profile-form";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,7 @@ export default async function AccountPage({
 
   const billing = await loadBillingStatus();
   const isActive = billing?.has_subscription ?? false;
+  const price = derivePlanDisplay(await loadPrices());
   const periodEnd = billing?.current_period_end
     ? new Date(billing.current_period_end).toLocaleDateString("en-GB", {
         day: "numeric",
@@ -105,12 +107,12 @@ export default async function AccountPage({
         </div>
         {periodEnd && (
           <p className="mt-1.5 text-[13.5px] text-neutral-600">
-            {isActive ? `Renews on ${periodEnd}. €7.99 per month.` : `Ended on ${periodEnd}.`}
+            {isActive ? `Renews on ${periodEnd}. ${price.monthly} per month.` : `Ended on ${periodEnd}.`}
           </p>
         )}
         {!periodEnd && !isActive && (
           <p className="mt-1.5 text-[13.5px] text-neutral-600">
-            €7.99 per month. Cancel anytime.
+            {price.monthly} per month. Cancel anytime.
           </p>
         )}
 

@@ -97,6 +97,33 @@ export async function loadBillingStatus(): Promise<BillingStatus | null> {
   }
 }
 
+export type PlanPrice = {
+  unit_amount: number; // smallest currency unit (e.g. cents)
+  currency: string;
+  interval: string; // "month" | "year"
+};
+
+export type Prices = {
+  monthly: PlanPrice | null;
+  yearly: PlanPrice | null;
+};
+
+/**
+ * Live monthly/yearly amounts from Stripe (via the public backend endpoint) so
+ * the pricing UI never drifts from the real prices. No auth — the marketing
+ * pages are unauthenticated. Returns null on any failure; callers fall back to
+ * static defaults so a page never shows a broken price.
+ */
+export async function loadPrices(): Promise<Prices | null> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/billing/prices`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as Prices;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Kick off a Stripe Checkout session for the chosen plan and redirect the
  * browser to it. Bound with a plan in the plan-picker form; defaults to monthly
