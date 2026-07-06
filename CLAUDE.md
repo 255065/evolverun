@@ -1,6 +1,26 @@
 # CLAUDE.md — Project Instructions
 # Project Name: EvolveRun (adaptive performance OS for endurance athletes)
 
+## ⚠️ Local dev & verification — READ FIRST (hard rule)
+
+**Never start a local dev server on this machine.** Running `npm run dev`,
+`next dev`, `vercel dev`, or the preview MCP (`preview_start`) has **repeatedly
+crashed the founder's Mac** (Turbopack pins CPU/RAM, especially when it hits a
+stale-cache error loop). This is not negotiable — do not start one "just to
+check", and do not leave a background dev process running.
+
+Verify changes the lightweight way instead:
+- **Types**: `cd frontend && npx tsc --noEmit`
+- **Lint**: `cd frontend && npm run lint`
+- **Tests**: `cd frontend && npx vitest run` and `cd backend && ./.venv/bin/python -m pytest -q`
+- **Visual**: build a **static widget preview** (the `visualize` tool) to show UI
+  changes in-chat — no server needed.
+- **Real visual/behaviour confirmation happens on the deployed site
+  (https://evolverun.app), never a local server.** Ship, then check in the browser.
+
+If a change genuinely can't be verified without running the app, say so and let
+the founder run it — don't start the server yourself.
+
 ## Mission (Version 1)
 
 **Simple AI endurance coach. Connect Strava. Get answers.**
@@ -23,8 +43,14 @@ We DO in V1:
 - `save-training-plan` as the single atomic plan-write tool
 - Hosted OAuth 2.1 + PKCE so claude.ai's "Add custom connector" → Connect
   flow works end-to-end
-- Marketing landing page (`/`) — signups go straight to `/dashboard`
-- Stripe Checkout subscription from day 1 (~€9–14/mo, no free tier)
+- Marketing landing page (`/`) → signup funnel: **signup → confirm email →
+  `/onboarding` (connect Strava *before* paying) → hard paywall → `/dashboard`**.
+  Non-payers stay dormant (data persists, dashboard locked by the middleware
+  paywall). Onboarding shows only the *quantity* of synced history, never the
+  analysis — that's the reason to subscribe.
+- **Stripe Checkout subscription, now LIVE** — Pro Monthly €7.99/mo or Pro Annual
+  €69/yr (no free tier). Price tags render live from Stripe (`GET /billing/prices`).
+  `FOUNDER` promo (100% off forever, capped at 5 uses) comps the founder + tests.
 - (5-question onboarding wizard rolled back — deferred to V2 once we have
   a place to surface the answers, e.g. into the coaching-guide tool)
 
@@ -77,25 +103,39 @@ evolverun/
 ```
 
 ## Production URLs
+- Frontend: `https://evolverun.app` (custom domain, live — the primary URL)
 - Backend / MCP: `https://evovlerun-production.up.railway.app`
-- Frontend: `https://evovlerun.vercel.app`
 - MCP endpoint: `https://evovlerun-production.up.railway.app/mcp`
 - GitHub: `255065/evovlerun` (note: 3 v's in the name — typo, can be
   renamed later without breaking anything)
 
-## Claude Code production access (CLI tools available in this session)
-Claude can make live production changes directly via these CLIs:
+## Known blockers & gotchas
+- **Strava API app is "Inactive"** → activity fetch returns `403 Application Status:
+  Inactive`. OAuth login works, but the onboarding "N activities synced" count stays 0
+  until the app is reactivated at https://www.strava.com/settings/api. Founder action.
+- **Dead code**: `app/_landing/sections.tsx` exports a `Pricing()` component that the
+  landing page never renders — don't wire live prices into it (deleting it is fine if asked).
 
-| Tool | CLI | Notes |
-|------|-----|-------|
-| Railway | `railway` v4.66.0 | Deploy, set env vars, view logs |
-| Vercel | `vercel` | Deploy frontend, set env vars |
-| GitHub | `gh` v2.86.0 | PRs, issues, branches |
-| Supabase | MCP server | Direct DB access — requires Claude Code restart to activate |
-| Resend | `resend` CLI | Email — API key set in `.env` + Railway |
+## Claude Code production access (connectors + CLIs)
+Claude can make live production changes directly. **MCP connectors** (preferred —
+API-backed, precise) and CLIs available:
 
-To deploy backend: commit to `v1-prelaunch` → merge into `main` → `git push origin main` → Railway auto-deploys via GitHub.
-To deploy frontend: `cd ~/dev/evolverun/frontend && vercel --prod`
+| Tool | Access | What for |
+|------|--------|----------|
+| Supabase | **MCP (active)** | Schema, raw SQL, `apply_migration`, security/perf **advisors**, logs, TS types. Project "ai coach" = `rjyrosxqqzbpcuuffliu`. |
+| Stripe | **MCP (read + write)** | Prices, coupons/promo codes, refunds, subscriptions, docs. Live account `acct_1TYsDc3Ia3tUnKZg`. |
+| Vercel | **MCP** + `vercel` CLI | Deployments, runtime logs/errors, domains; `vercel --prod` to deploy. |
+| Railway | `railway` CLI | Deploy, env vars, logs. |
+| GitHub | `gh` CLI | PRs, issues, branches. |
+| Resend | `resend` CLI | Email — `RESEND_API_KEY` in `.env` + Railway. |
+
+Live writes (Stripe objects, DB migrations, deploys) are side-effectful — confirm
+specifics with the founder before running them, and never run a local dev server (see
+the top rule). Auth config that the API can't set (e.g. leaked-password protection) is
+a founder dashboard toggle.
+
+To deploy backend: commit to `v1-prelaunch` → merge into `main` → `git push origin main` → Railway auto-deploys via GitHub. (Pushing to `main` needs explicit per-turn authorization.)
+To deploy frontend: `cd ~/dev/evolverun/frontend && vercel --prod` (or the Vercel git auto-deploy on push to `main`).
 
 ## Changelog — keep `CHANGELOG.md` current
 After any **notable** change, add a one-line entry to `CHANGELOG.md` (repo root)

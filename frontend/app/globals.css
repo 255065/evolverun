@@ -125,6 +125,16 @@ body {
   font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+/* Tailwind v4 Preflight defaults <button> to cursor:default. Restore the
+ * pointer so every clickable button (plan picker, Connect Strava, etc.) signals
+ * it's interactive. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 /* Utility class — apply to onboarding/marketing layouts to flip to the
  * warm-beige look without rewriting every component. */
 .evr-warm {
