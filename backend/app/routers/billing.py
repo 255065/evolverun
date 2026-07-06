@@ -125,7 +125,9 @@ def create_checkout_session(
 
     client = _stripe_client(settings)
     customer_id = _ensure_customer(client, user)
-    success_url = f"{settings.frontend_url}/dashboard/account?checkout=success"
+    # Land paying users on the product itself, not the billing page — this is
+    # the last step of the onboarding funnel.
+    success_url = f"{settings.frontend_url}/dashboard?checkout=success"
     cancel_url = f"{settings.frontend_url}/dashboard/account?checkout=cancelled"
 
     session_obj = client.checkout.Session.create(

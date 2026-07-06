@@ -50,13 +50,14 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
     return { error: "Password must be at least 8 characters." };
   }
 
-  // Land the confirmation link on the paywall, so a new user subscribes before
-  // the dashboard. Origin comes from the request so it's right in prod + preview.
+  // Land the confirmation link on the onboarding funnel, so a new user connects
+  // Strava and subscribes before the dashboard. Origin comes from the request so
+  // it's right in prod + preview.
   const hdrs = await headers();
   const host = hdrs.get("host") ?? "";
   const proto = hdrs.get("x-forwarded-proto") ?? "https";
   const emailRedirectTo = `${proto}://${host}/auth/callback?next=${encodeURIComponent(
-    "/dashboard/account?paywall=1",
+    "/onboarding",
   )}`;
 
   const supabase = await createClient();
@@ -75,11 +76,11 @@ export async function signupAction(_prev: AuthState, formData: FormData): Promis
   // With "Confirm email" enabled, signUp returns no session until the link is
   // clicked — show the check-your-inbox screen instead of bouncing to a
   // protected route. If a session does exist (email confirmation disabled), go
-  // straight to the paywall rather than the dashboard.
+  // straight into the onboarding funnel rather than the dashboard.
   if (!data.session) {
     return { error: null, emailSent: true };
   }
-  redirect("/dashboard/account?paywall=1");
+  redirect("/onboarding");
 }
 
 export async function logoutAction() {

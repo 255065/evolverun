@@ -11,6 +11,16 @@ mirror of git history — see `CLAUDE.md` for what to log and what to skip.
 ## [Unreleased]
 
 ### Added
+- **Onboarding funnel**: new signups now flow **signup → confirm email →
+  `/onboarding` (connect Strava, *before* payment) → hard paywall → dashboard**.
+  The connect step shows only the *quantity* of synced history ("N activities ·
+  Y years"), never the analysis — that stays behind the paywall — so the user's
+  own data becomes the reason to subscribe. Non-payers stay **dormant**
+  (connection + workouts persist; the middleware paywall keeps `/dashboard`
+  locked until they pay). Post-signup landing, the middleware paywall redirect,
+  and Stripe checkout success now route through the funnel to `/dashboard`. The
+  Strava OAuth callback can return to `/onboarding` via a same-origin `next`
+  carried in the signed OAuth state.
 - **Monthly / yearly plan picker** on the paywall: new users choose **Pro Monthly
   €7.99** or **Pro Annual €69** before checkout, and the selected plan routes to its
   own Stripe price. Checkout endpoint takes a `plan` param; adds `STRIPE_PRICE_ID_YEARLY`.

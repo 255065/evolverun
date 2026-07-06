@@ -20,9 +20,17 @@ export async function connectProviderAction(formData: FormData) {
   const provider = String(formData.get("provider") ?? "");
   if (!provider) return;
 
+  // Optional in-app path to return to after the OAuth round-trip. The
+  // onboarding funnel passes /onboarding so the callback lands there instead
+  // of the dashboard connections page. Only forward same-origin paths — the
+  // backend re-validates, but there's no reason to send anything else.
+  const next = String(formData.get("next") ?? "");
+  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "";
+  const qs = safeNext ? `?next=${encodeURIComponent(safeNext)}` : "";
+
   const token = await getSupabaseAccessToken();
 
-  const response = await fetch(`${BACKEND_URL}/providers/${provider}/authorize`, {
+  const response = await fetch(`${BACKEND_URL}/providers/${provider}/authorize${qs}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",

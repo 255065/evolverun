@@ -46,6 +46,13 @@ def test_default_plan_uses_monthly_price(monkeypatch):
     assert captured["line_items"] == [{"price": "price_monthly", "quantity": 1}]
 
 
+def test_checkout_success_lands_on_dashboard(monkeypatch):
+    """Paying users land on the product, not the billing page (funnel exit)."""
+    captured = _capture_session(monkeypatch)
+    billing.create_checkout_session(USER, _settings())
+    assert captured["success_url"] == "https://evolverun.app/dashboard?checkout=success"
+
+
 def test_unconfigured_plan_returns_503(monkeypatch):
     _capture_session(monkeypatch)
     with pytest.raises(HTTPException) as exc:

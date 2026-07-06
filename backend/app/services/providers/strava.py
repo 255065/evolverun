@@ -63,8 +63,10 @@ class StravaProvider(ProviderClient):
         self.client_secret = settings.strava_client_secret
 
     # -- OAuth -------------------------------------------------------------
-    def start_oauth(self, *, user_id: str, redirect_uri: str) -> OAuthFlowResult:
-        state = sign_state(user_id=user_id, provider=self.slug)
+    def start_oauth(
+        self, *, user_id: str, redirect_uri: str, next_path: str | None = None
+    ) -> OAuthFlowResult:
+        state = sign_state(user_id=user_id, provider=self.slug, next_path=next_path)
         params = {
             "client_id": self.client_id,
             "response_type": "code",

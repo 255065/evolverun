@@ -79,3 +79,4 @@ supabase/.temp/
 
 # Feature-factory transient scope sentinel (set per-agent by the orchestrator)
 .claude/.active-scope
+frontend/.claude/

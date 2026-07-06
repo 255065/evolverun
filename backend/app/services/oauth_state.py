@@ -9,14 +9,29 @@ from __future__ import annotations
 
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import NamedTuple
 
 from jose import JWTError, jwt
 
 from app.config import get_settings
 
 
-def sign_state(*, user_id: str, provider: str, ttl_seconds: int = 600) -> str:
-    """Mint a state token tying a user to a provider. Default TTL = 10 minutes."""
+class VerifiedState(NamedTuple):
+    """What a valid state token decodes to."""
+
+    user_id: str
+    next_path: str | None  # in-app path to return the user to after the callback
+
+
+def sign_state(
+    *, user_id: str, provider: str, next_path: str | None = None, ttl_seconds: int = 600
+) -> str:
+    """Mint a state token tying a user to a provider. Default TTL = 10 minutes.
+
+    `next_path` carries the in-app path to send the user back to after the
+    provider callback (e.g. `/onboarding`), so it survives the round-trip
+    without a session cookie.
+    """
     settings = get_settings()
     if not settings.oauth_state_secret:
         raise RuntimeError("OAUTH_STATE_SECRET not configured")
@@ -29,11 +44,16 @@ def sign_state(*, user_id: str, provider: str, ttl_seconds: int = 600) -> str:
         "exp": int((now + timedelta(seconds=ttl_seconds)).timestamp()),
         "nonce": secrets.token_urlsafe(8),
     }
+    if next_path:
+        payload["next"] = next_path
     return jwt.encode(payload, settings.oauth_state_secret, algorithm="HS256")
 
 
-def verify_state(state: str, *, expected_provider: str) -> str:
-    """Validate state and return the user_id it was minted for. Raises on failure."""
+def verify_state(state: str, *, expected_provider: str) -> VerifiedState:
+    """Validate state and return the user_id + next_path it was minted for.
+
+    Raises ValueError on failure.
+    """
     settings = get_settings()
     if not settings.oauth_state_secret:
         raise RuntimeError("OAUTH_STATE_SECRET not configured")
@@ -49,4 +69,4 @@ def verify_state(state: str, *, expected_provider: str) -> str:
     sub = payload.get("sub")
     if not sub:
         raise ValueError("OAuth state missing subject")
-    return sub
+    return VerifiedState(user_id=sub, next_path=payload.get("next"))

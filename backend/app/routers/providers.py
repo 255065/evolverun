@@ -13,7 +13,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
@@ -77,9 +77,22 @@ def _redirect_uri(settings: Settings, provider_slug: str) -> str:
     return f"{settings.backend_public_url.rstrip('/')}/providers/{provider_slug}/callback"
 
 
-def _frontend_redirect(settings: Settings, status_msg: str, provider_slug: str) -> str:
+def _safe_next(next_path: str | None) -> str | None:
+    """Only allow same-origin in-app paths — no scheme, no protocol-relative //."""
+    if next_path and next_path.startswith("/") and not next_path.startswith("//"):
+        return next_path
+    return None
+
+
+def _frontend_redirect(
+    settings: Settings, status_msg: str, provider_slug: str, next_path: str | None = None
+) -> str:
+    # `next_path` (e.g. /onboarding) lets the funnel return here instead of the
+    # dashboard connections page. It's validated same-origin and carries no
+    # query string of its own, so appending ?provider=&status= is safe.
+    base = _safe_next(next_path) or "/dashboard/connections"
     return (
-        f"{settings.frontend_url.rstrip('/')}/dashboard/connections"
+        f"{settings.frontend_url.rstrip('/')}{base}"
         f"?provider={provider_slug}&status={status_msg}"
     )
 
@@ -97,6 +110,7 @@ def authorize(
     provider_slug: str,
     user: Annotated[CurrentUser, Depends(get_current_user)],
     settings: Annotated[Settings, Depends(get_settings)],
+    next_path: Annotated[str | None, Query(alias="next")] = None,
 ) -> AuthorizeResponse:
     """Build the provider authorize URL the frontend should redirect the user to."""
     try:
@@ -105,7 +119,9 @@ def authorize(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     redirect_uri = _redirect_uri(settings, provider_slug)
-    flow = provider.start_oauth(user_id=user.id, redirect_uri=redirect_uri)
+    flow = provider.start_oauth(
+        user_id=user.id, redirect_uri=redirect_uri, next_path=_safe_next(next_path)
+    )
     return AuthorizeResponse(authorize_url=flow.authorize_url)
 
 
@@ -133,17 +149,21 @@ async def callback(
         return RedirectResponse(_frontend_redirect(settings, "unknown_provider", provider_slug))
 
     try:
-        user_id = verify_state(state, expected_provider=provider_slug)
+        verified = verify_state(state, expected_provider=provider_slug)
     except ValueError as exc:
         log.warning("OAuth state rejected for %s: %s", provider_slug, exc)
         return RedirectResponse(_frontend_redirect(settings, "bad_state", provider_slug))
+    user_id = verified.user_id
+    next_path = verified.next_path
 
     redirect_uri = _redirect_uri(settings, provider_slug)
     try:
         tokens = await provider.complete_oauth(code=code, state=state, redirect_uri=redirect_uri)
     except ProviderError as exc:
         log.exception("complete_oauth failed for %s", provider_slug)
-        return RedirectResponse(_frontend_redirect(settings, f"exchange_failed:{exc}", provider_slug))
+        return RedirectResponse(
+            _frontend_redirect(settings, f"exchange_failed:{exc}", provider_slug, next_path)
+        )
 
     upsert_tokens(user_id=user_id, provider=provider_slug, tokens=tokens)
 
@@ -162,9 +182,11 @@ async def callback(
         )
     except ProviderError as exc:
         log.warning("Initial sync failed for %s/%s: %s", user_id, provider_slug, exc)
-        return RedirectResponse(_frontend_redirect(settings, "connected_no_sync", provider_slug))
+        return RedirectResponse(
+            _frontend_redirect(settings, "connected_no_sync", provider_slug, next_path)
+        )
 
-    return RedirectResponse(_frontend_redirect(settings, "connected", provider_slug))
+    return RedirectResponse(_frontend_redirect(settings, "connected", provider_slug, next_path))
 
 
 # -- status --------------------------------------------------------------------

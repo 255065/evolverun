@@ -34,7 +34,10 @@ export async function updateSession(request: NextRequest) {
   // `/oauth/consent` is auth-required because we need to know who's granting
   // access to the client. `/oauth/*` other paths (none for now) would also
   // sit behind login.
-  const isProtected = pathname.startsWith("/dashboard") || pathname.startsWith("/oauth/");
+  const isProtected =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/oauth/") ||
+    pathname.startsWith("/onboarding");
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
@@ -62,6 +65,8 @@ export async function updateSession(request: NextRequest) {
   // V1 paywall — only enforced when the env flag is on. Account, OAuth, and
   // onboarding are always reachable so users can start, fix, or recover from
   // a failed subscription without getting locked out of their own data.
+  // Unpaid users hitting the dashboard are routed into the onboarding funnel
+  // (connect Strava → pay), not the bare billing page.
   if (
     user &&
     ENFORCE_SUBSCRIPTION &&
@@ -77,8 +82,8 @@ export async function updateSession(request: NextRequest) {
     const active = status === "active" || status === "trialing";
     if (!active) {
       const url = request.nextUrl.clone();
-      url.pathname = "/dashboard/account";
-      url.searchParams.set("paywall", "1");
+      url.pathname = "/onboarding";
+      url.search = "";
       return NextResponse.redirect(url);
     }
   }

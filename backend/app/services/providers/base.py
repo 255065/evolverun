@@ -217,8 +217,13 @@ class ProviderClient(ABC):
     slug: str  # short id used in URLs and the oauth_connections.provider column
 
     # -- OAuth -------------------------------------------------------------
-    def start_oauth(self, *, user_id: str, redirect_uri: str) -> OAuthFlowResult:
-        """Begin OAuth. Returns the URL we should redirect the user to."""
+    def start_oauth(
+        self, *, user_id: str, redirect_uri: str, next_path: str | None = None
+    ) -> OAuthFlowResult:
+        """Begin OAuth. Returns the URL we should redirect the user to.
+
+        `next_path` is an in-app path to return the user to after the callback.
+        """
         raise NotImplementedError(f"{self.slug} does not support OAuth")
 
     async def complete_oauth(
