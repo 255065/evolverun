@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#fbfaf7] px-4 text-neutral-950">
       <div className="w-full max-w-md">
         <Link href="/" className="mb-8 flex items-center justify-center gap-2 text-[15px] font-semibold">
-          <Brandmark />
+          <Image src="/evr-logo.png" alt="" width={20} height={20} className="h-5 w-5" />
           EvolveRun
         </Link>
         <div className="rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
@@ -63,15 +64,5 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-function Brandmark() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden="true">
-      <path d="M3 5 H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M3 12 Q9 8 15 12 T21 12" stroke="#dc6b3f" strokeWidth="2" strokeLinecap="round" fill="none" />
-      <path d="M3 19 H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
   );
 }
