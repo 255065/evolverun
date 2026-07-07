@@ -81,6 +81,7 @@ export type BillingStatus = {
   current_period_end: string | null;
   customer_id: string | null;
   has_subscription: boolean;
+  interval: string | null; // "month" | "year"
 };
 
 export async function loadBillingStatus(): Promise<BillingStatus | null> {

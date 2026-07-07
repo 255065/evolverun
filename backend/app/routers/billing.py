@@ -102,6 +102,7 @@ class StatusResponse(BaseModel):
     current_period_end: datetime | None
     customer_id: str | None
     has_subscription: bool
+    interval: str | None = None  # "month" | "year", resolved from the price id
 
 
 class PriceInfo(BaseModel):
@@ -175,6 +176,7 @@ def create_portal_session(
 @router.get("/status", response_model=StatusResponse)
 def billing_status(
     user: Annotated[CurrentUser, Depends(get_current_user)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> StatusResponse:
     supabase = get_supabase_admin()
     row = (
@@ -194,12 +196,22 @@ def billing_status(
         # response always carries a UTC datetime.
         period_end = datetime.fromisoformat(period_end_raw.replace("Z", "+00:00"))
     sub_status = data.get("subscription_status")
+    price_id = data.get("subscription_price_id")
+    # Resolve the billing interval by matching the subscribed price against the
+    # two configured prices, so the UI can label monthly vs yearly correctly.
+    if price_id and price_id == settings.stripe_price_id_yearly:
+        interval = "year"
+    elif price_id and price_id == settings.stripe_price_id:
+        interval = "month"
+    else:
+        interval = None
     return StatusResponse(
         status=sub_status,
-        price_id=data.get("subscription_price_id"),
+        price_id=price_id,
         current_period_end=period_end,
         customer_id=data.get("stripe_customer_id"),
         has_subscription=sub_status in {"active", "trialing"},
+        interval=interval,
     )
 
 

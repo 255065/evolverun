@@ -39,6 +39,7 @@ export default async function AccountPage({
 
   const billing = await loadBillingStatus();
   const isActive = billing?.has_subscription ?? false;
+  const isYearly = billing?.interval === "year";
   const price = derivePlanDisplay(await loadPrices());
   const periodEnd = billing?.current_period_end
     ? new Date(billing.current_period_end).toLocaleDateString("en-GB", {
@@ -101,13 +102,15 @@ export default async function AccountPage({
       <Section eyebrow="Plan">
         <div className="flex items-baseline gap-3">
           <span className="text-[18px] font-semibold tracking-[-0.01em]">
-            {planName(billing?.status)}
+            {planName(billing?.status, isYearly)}
           </span>
           <StatusPill status={billing?.status ?? null} />
         </div>
         {periodEnd && (
           <p className="mt-1.5 text-[13.5px] text-neutral-600">
-            {isActive ? `Renews on ${periodEnd}. ${price.monthly} per month.` : `Ended on ${periodEnd}.`}
+            {isActive
+              ? `Renews on ${periodEnd}. ${isYearly ? `${price.yearlyTotal} per year` : `${price.monthly} per month`}.`
+              : `Ended on ${periodEnd}.`}
           </p>
         )}
         {!periodEnd && !isActive && (
@@ -174,9 +177,10 @@ function Section({
   );
 }
 
-function planName(status: string | null | undefined): string {
-  if (status === "active" || status === "trialing") return "EvolveRun monthly";
-  if (status === "past_due" || status === "unpaid") return "EvolveRun monthly";
+function planName(status: string | null | undefined, isYearly: boolean): string {
+  const tier = isYearly ? "EvolveRun annual" : "EvolveRun monthly";
+  if (status === "active" || status === "trialing") return tier;
+  if (status === "past_due" || status === "unpaid") return tier;
   return "No plan";
 }
 
