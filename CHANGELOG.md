@@ -10,6 +10,25 @@ mirror of git history — see `CLAUDE.md` for what to log and what to skip.
 
 ## [Unreleased]
 
+### Fixed
+- **A saved training plan whose sessions are all in the past is no longer
+  invisible.** The dashboard and the `get-planned-workouts` tool both only looked
+  from today forward, so a plan whose dates had drifted into the past showed an
+  empty schedule and the tool wrongly reported *"No active training plan yet."*
+  Now: the dashboard falls back to the plan's own sessions (any date) so they
+  render; `get-planned-workouts` reports the active plan and its real date range
+  instead of claiming no plan exists; and `save-training-plan` returns a
+  `warning`/`past_dated_count` when it's handed sessions dated before today, so a
+  mis-anchored plan is caught at save time rather than looking like a silent
+  success.
+
+### Ops
+- **MCP moved to a custom domain: `https://mcp.evolverun.app/mcp`.** Added the
+  domain to the Railway backend (Cloudflare CNAME `mcp` → Railway, DNS-only) and
+  set `MCP_PUBLIC_URL` to it, so OAuth discovery + the `/dashboard/mcp` setup URL
+  now advertise the branded domain. The Railway origin still serves the same app
+  (Strava callback unchanged). Existing connectors must be re-added at the new URL.
+
 ### Added
 - **Price tags read live from Stripe.** New public `GET /billing/prices` returns the
   monthly/yearly amounts; the paywall picker, account page, and `/pricing` now render

@@ -34,6 +34,49 @@ def get_planned_workouts(days_ahead: int = 7) -> dict[str, Any]:
     )
 
     if not rows:
+        # No sessions in the forward window — but an active plan may still exist
+        # whose sessions fall outside it (e.g. the dates drifted into the past).
+        # Report the truth so the assistant can offer to reschedule rather than
+        # claim the plan was never saved.
+        active = (
+            client.table("training_plans")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("status", "active")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+            .data
+            or []
+        )
+        if active:
+            span = (
+                client.table("planned_workouts")
+                .select("scheduled_date")
+                .eq("user_id", user_id)
+                .eq("plan_id", active[0]["id"])
+                .order("scheduled_date")
+                .execute()
+                .data
+                or []
+            )
+            if span:
+                first = span[0]["scheduled_date"]
+                last = span[-1]["scheduled_date"]
+                return {
+                    "available": False,
+                    "active_plan": True,
+                    "window_days": days_ahead,
+                    "plan_sessions": len(span),
+                    "plan_date_range": {"first": first, "last": last},
+                    "message": (
+                        f"You have an active plan with {len(span)} sessions dated "
+                        f"{first}–{last}, but none fall in the next {days_ahead} days. "
+                        f"If those dates are in the past, reschedule the plan to start "
+                        f"from today."
+                    ),
+                }
+
         return {
             "available": False,
             "message": "No active training plan yet.",

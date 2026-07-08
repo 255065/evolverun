@@ -16,7 +16,7 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
-import { loadActivitySummary } from "./actions";
+import { loadActivitySummary, loadCurrentPlan } from "./actions";
 
 type Row = Record<string, unknown>;
 
@@ -167,5 +167,94 @@ describe("loadActivitySummary", () => {
 
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
+  });
+});
+
+// loadCurrentPlan issues up to three reads:
+//   1. planned_workouts (forward window, awaited directly)
+//   2. training_plans   (…maybeSingle())
+//   3. planned_workouts (fallback by plan_id, awaited directly) — only if (1) empty
+// The builder is thenable (for the direct-awaited planned_workouts reads) and also
+// exposes maybeSingle() (for training_plans). `pwResults` feeds the two
+// planned_workouts reads in order.
+function installPlanMock(pwResults: Array<Row[]>, planRow: Row | null) {
+  let pwCall = 0;
+  const counters = { pw: 0 };
+  fromImpl.mockImplementation((table: string) => {
+    const builder: Record<string, unknown> = {};
+    for (const m of ["select", "eq", "gte", "order", "limit"]) {
+      builder[m] = vi.fn(() => builder);
+    }
+    if (table === "training_plans") {
+      builder.maybeSingle = vi.fn(async () => ({ data: planRow }));
+    }
+    builder.then = (resolve: (v: { data: Row[] | null }) => unknown) => {
+      if (table === "planned_workouts") {
+        const data = pwResults[pwCall] ?? [];
+        pwCall += 1;
+        counters.pw += 1;
+        return resolve({ data });
+      }
+      return resolve({ data: null });
+    };
+    return builder;
+  });
+  return counters;
+}
+
+describe("loadCurrentPlan", () => {
+  const planRow = {
+    id: "plan-1",
+    race_type: "military_selection",
+    race_date: null,
+    target_time_seconds: null,
+    philosophy: "polarized",
+    current_phase: null,
+    weeks: 30,
+    plan_json: {},
+  };
+  const past = [
+    { scheduled_date: "2026-06-01", session_type: "easy", sport: "running", duration_min: 45, distance_m: null, description: null, intensity_zones: {}, rationale: null, status: "scheduled" },
+    { scheduled_date: "2026-06-20", session_type: "long", sport: "running", duration_min: 100, distance_m: null, description: null, intensity_zones: {}, rationale: null, status: "scheduled" },
+  ];
+
+  it("returns null when there is no authenticated user", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+    expect(await loadCurrentPlan()).toBeNull();
+  });
+
+  it("falls back to the plan's own sessions when nothing is upcoming (past-dated plan)", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+    // Forward window empty; fallback returns the plan's (past) sessions.
+    const counters = installPlanMock([[], past], planRow);
+
+    const result = await loadCurrentPlan();
+
+    expect(result).not.toBeNull();
+    expect(result!.active).toBe(true);
+    expect(result!.plan_id).toBe("plan-1");
+    expect(result!.next_14_days).toHaveLength(2);
+    expect(result!.next_14_days![0].scheduled_date).toBe("2026-06-01");
+    // Both planned_workouts reads ran (window + fallback).
+    expect(counters.pw).toBe(2);
+  });
+
+  it("does not run the fallback when sessions are already upcoming", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+    const counters = installPlanMock([past], planRow);
+
+    const result = await loadCurrentPlan();
+
+    expect(result!.active).toBe(true);
+    expect(result!.next_14_days).toHaveLength(2);
+    // Only the forward-window read ran — no fallback.
+    expect(counters.pw).toBe(1);
+  });
+
+  it("returns active:false when there are neither sessions nor a plan", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+    installPlanMock([[]], null);
+
+    expect(await loadCurrentPlan()).toEqual({ active: false });
   });
 });

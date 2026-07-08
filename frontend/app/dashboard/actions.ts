@@ -106,7 +106,7 @@ export async function loadCurrentPlan(): Promise<CurrentPlan | null> {
     .limit(200);
   if (sessionErr) throw new Error(`loadCurrentPlan: ${sessionErr.message}`);
 
-  const upcoming = (sessionRows ?? []) as PlannedSession[];
+  let upcoming = (sessionRows ?? []) as PlannedSession[];
 
   // Newest plan row (any status) for the header metadata + block focus.
   const { data: planRow, error: planErr } = await supabase
@@ -117,6 +117,24 @@ export async function loadCurrentPlan(): Promise<CurrentPlan | null> {
     .limit(1)
     .maybeSingle();
   if (planErr) throw new Error(`loadCurrentPlan plans: ${planErr.message}`);
+
+  // If nothing is upcoming but a plan exists, its sessions may be entirely in the
+  // past (e.g. a block whose dates drifted). Fall back to that plan's own sessions
+  // — with no date floor — so the schedule still renders instead of looking empty.
+  const planId = (planRow as { id?: string } | null)?.id;
+  if (upcoming.length === 0 && planId) {
+    const { data: planSessions, error: fallbackErr } = await supabase
+      .from("planned_workouts")
+      .select(
+        "scheduled_date, session_type, sport, duration_min, distance_m, description, intensity_zones, rationale, status",
+      )
+      .eq("user_id", user.id)
+      .eq("plan_id", planId)
+      .order("scheduled_date")
+      .limit(200);
+    if (fallbackErr) throw new Error(`loadCurrentPlan fallback: ${fallbackErr.message}`);
+    upcoming = (planSessions ?? []) as PlannedSession[];
+  }
 
   if (upcoming.length === 0 && !planRow) return { active: false };
 

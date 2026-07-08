@@ -366,6 +366,12 @@ def save_training_plan(
     if errors:
         return {"ok": False, "errors": errors}
 
+    # Sessions dated before today never surface (dashboard + get-planned-workouts
+    # both look forward). Almost always a mis-anchored plan, so flag it loudly in
+    # the response rather than silently "succeeding" with an invisible plan.
+    today = date.today()
+    past_dated = sum(1 for r in rows if date.fromisoformat(r["scheduled_date"]) < today)
+
     # Find the newest active plan to attach sessions to.
     active = (
         client.table("training_plans")
@@ -447,6 +453,15 @@ def save_training_plan(
         "sessions_replaced": deleted_count,
         "errors": errors if errors else None,
         "dashboard_url": dashboard_url,
+        "past_dated_count": past_dated or None,
+        "warning": (
+            f"{past_dated} of {len(rows)} session(s) are dated before today "
+            f"({today.isoformat()}); they won't appear on the dashboard or in "
+            f"get-planned-workouts. Did you mean to anchor the plan to the "
+            f"current week?"
+        )
+        if past_dated
+        else None,
         "message": (
             f"Saved {inserted_count} session(s)"
             + (f", replacing {deleted_count} in the window" if deleted_count else "")

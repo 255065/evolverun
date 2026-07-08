@@ -327,6 +327,33 @@ def test_save_scopes_active_plan_lookup_to_user(monkeypatch):
     assert ("user_id", USER_ID) in eq_calls
 
 
+def test_past_dated_sessions_flag_a_warning(patch_client):
+    """Sessions before today still save, but the response must flag them so the
+    assistant catches a mis-anchored (past-dated) plan rather than reporting a
+    silent success on a plan that will be invisible everywhere."""
+    patch_client(FakeClient(select_returns={"training_plans": [{"id": EXISTING_PLAN_ID}]}))
+    # Two past dates + one comfortably-future date.
+    sessions = [_session("2026-06-01"), _session("2026-06-02"), _session("2099-01-01")]
+
+    result = plan_crud.save_training_plan(sessions=sessions, mode="append")
+
+    assert result["ok"] is True
+    assert result["past_dated_count"] == 2
+    assert result["warning"] and "before today" in result["warning"]
+
+
+def test_future_only_sessions_have_no_warning(patch_client):
+    patch_client(FakeClient(select_returns={"training_plans": [{"id": EXISTING_PLAN_ID}]}))
+
+    result = plan_crud.save_training_plan(
+        sessions=[_session("2099-01-01"), _session("2099-01-08")], mode="append"
+    )
+
+    assert result["ok"] is True
+    assert result["past_dated_count"] is None
+    assert result["warning"] is None
+
+
 def test_idempotent_retry_appends_to_existing_plan(patch_client):
     # First call: no active plan -> creates one.
     client1 = patch_client(FakeClient(select_returns={"training_plans": []}))
