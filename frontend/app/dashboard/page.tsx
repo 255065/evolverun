@@ -128,7 +128,6 @@ export default async function DashboardPage() {
       <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
         <CoachCard
           name="Claude"
-          tagline="Considered, careful with nuance"
           logo={<ClaudeLogo />}
           bg="#fde2d4"
           href="/dashboard/mcp?assistant=claude"
@@ -136,7 +135,6 @@ export default async function DashboardPage() {
         />
         <CoachCard
           name="ChatGPT"
-          tagline="Versatile, fast, broad"
           logo={<ChatGPTLogo />}
           bg="#d6f0e2"
           href="/dashboard/mcp?assistant=chatgpt"
@@ -249,14 +247,12 @@ function StatCard({ label, value }: { label: string; value: string }) {
 
 function CoachCard({
   name,
-  tagline,
   logo,
   bg,
   href,
   connected,
 }: {
   name: string;
-  tagline: string;
   logo: React.ReactNode;
   bg: string;
   href: string;
@@ -277,7 +273,6 @@ function CoachCard({
               </span>
             )}
           </div>
-          <div className="text-[13px] text-neutral-600">{tagline}</div>
         </div>
       </div>
       <Link
