@@ -11,6 +11,12 @@ mirror of git history — see `CLAUDE.md` for what to log and what to skip.
 ## [Unreleased]
 
 ### Fixed
+- **Landing-page chat demo no longer auto-plays on load.** On large/tall desktop
+  displays the demo's top peeked into the viewport at load, satisfying the old
+  desktop `threshold: 0.15` trigger, so the animation played out before the user
+  scrolled to it (leaving it parked on the final frame). Unified the scroll
+  trigger to the mobile guard — a negative bottom `rootMargin` that holds until
+  the player scrolls into view — for all viewports.
 - **A saved training plan whose sessions are all in the past is no longer
   invisible.** The dashboard and the `get-planned-workouts` tool both only looked
   from today forward, so a plan whose dates had drifted into the past showed an

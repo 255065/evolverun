@@ -79,13 +79,13 @@ export function ChatDemo() {
       return () => cancelAnimationFrame(id);
     }
 
-    // Play once when the player is genuinely scrolled into view. On phones the
-    // player's top sits inside the initial viewport just under the hero, so a
-    // plain threshold fired on load; the negative bottom rootMargin holds the
-    // trigger until its top crosses ~65% of the viewport. Desktop keeps its
-    // original threshold (the demo is below the fold there, so it never
-    // mis-fired) to avoid changing proven behavior.
-    const isMobile = window.matchMedia?.("(max-width: 760px)").matches;
+    // Play once when the player is genuinely scrolled into view. The player's
+    // top can sit inside the initial viewport just under the hero — on phones,
+    // but also on large/tall desktop displays — so a plain threshold fires on
+    // load and the demo plays out before the user ever reaches it. The negative
+    // bottom rootMargin holds the trigger until the player's top has scrolled
+    // up past ~60% of the viewport, which only happens once the user is
+    // actually looking at it.
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting) && !startedRef.current) {
@@ -95,7 +95,7 @@ export function ChatDemo() {
           io.disconnect();
         }
       },
-      isMobile ? { rootMargin: "0px 0px -35% 0px", threshold: 0 } : { threshold: 0.15 },
+      { rootMargin: "0px 0px -40% 0px", threshold: 0 },
     );
     io.observe(el);
     return () => io.disconnect();
