@@ -2,10 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { logoutAction } from "@/app/(auth)/actions";
 import { PlanPicker } from "@/app/dashboard/account/plan-picker";
-import {
-  connectProviderAction,
-  getConnectionStatus,
-} from "@/app/dashboard/connections/actions";
+import { getConnectionStatus } from "@/app/dashboard/connections/actions";
 import { createClient } from "@/lib/supabase/server";
 import { formatSpan } from "./history-span";
 
@@ -160,19 +157,20 @@ export default async function OnboardingPage({
                 </p>
               )}
 
-              <form action={connectProviderAction} className="mt-6">
-                <input type="hidden" name="provider" value="strava" />
-                <input type="hidden" name="next" value="/onboarding" />
-                <button
-                  type="submit"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#fc4c02] px-5 py-3 text-[14px] font-medium text-white shadow-sm transition hover:bg-[#e34500]"
-                >
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                    <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
-                  </svg>
-                  Connect Strava
-                </button>
-              </form>
+              {/* Plain <a>, not <Link>: /connect/[provider] is a route handler
+                  (not a page). We need a full top-level navigation so its
+                  redirect to Strava's external authorize URL fires, and we must
+                  avoid <Link> prefetch invoking the OAuth-start handler early. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+              <a
+                href="/connect/strava?next=/onboarding"
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#fc4c02] px-5 py-3 text-[14px] font-medium text-white shadow-sm transition hover:bg-[#e34500]"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+                  <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+                </svg>
+                Connect Strava
+              </a>
               <p className="mt-4 text-center text-[12px] text-neutral-400">
                 Encrypted with Fernet · read-only · disconnect anytime
               </p>

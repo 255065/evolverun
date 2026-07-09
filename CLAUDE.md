@@ -21,6 +21,13 @@ Verify changes the lightweight way instead:
 If a change genuinely can't be verified without running the app, say so and let
 the founder run it — don't start the server yourself.
 
+**Every frontend change must look good on mobile, not just desktop.** Most
+EvolveRun users check the app on their phone. When building or editing UI,
+design and check the mobile viewport (~375px) alongside desktop — don't ship
+something that only looks right at a wide breakpoint. On the deployed site,
+verify with the browser's device toolbar / narrow window, or (in an
+Artifact/widget preview) resize to a mobile width before calling it done.
+
 ## Mission (Version 1)
 
 **Simple AI endurance coach. Connect Strava. Get answers.**
@@ -37,7 +44,7 @@ We deliberately do NOT in V1:
 - Compete on dashboards or unified-health graphs
 
 We DO in V1:
-- Strava OAuth + webhook + 90-day initial sync + live updates
+- Strava OAuth + webhook + 1-year initial sync + live updates
 - 11 MCP tools (Chirona-parity, kebab-case) exposed via streamable HTTP
 - Coaching-guide tool that locks tone, response shape, and plan grid format
 - `save-training-plan` as the single atomic plan-write tool
@@ -104,8 +111,11 @@ evolverun/
 
 ## Production URLs
 - Frontend: `https://evolverun.app` (custom domain, live — the primary URL)
-- Backend / MCP: `https://evovlerun-production.up.railway.app`
-- MCP endpoint: `https://evovlerun-production.up.railway.app/mcp`
+- MCP endpoint: `https://mcp.evolverun.app/mcp` (custom domain on the Railway
+  backend; `MCP_PUBLIC_URL` drives OAuth discovery + the `/dashboard/mcp` setup
+  URL). This is what users add as a connector.
+- Backend (origin, still valid): `https://evovlerun-production.up.railway.app`
+  — Strava OAuth callback still uses this (`backend_public_url` unchanged).
 - GitHub: `255065/evovlerun` (note: 3 v's in the name — typo, can be
   renamed later without breaking anything)
 

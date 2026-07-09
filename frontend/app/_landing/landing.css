@@ -124,7 +124,7 @@
 .evr-landing .hero {
   position: relative;
   max-width: 1180px; margin: 0 auto;
-  padding: 124px 24px 36px;
+  padding: 96px 24px 24px;
   text-align: center;
   overflow: visible;
 }
@@ -156,19 +156,19 @@
   50% { box-shadow: 0 0 0 5px rgba(37,163,90,0); }
 }
 .evr-landing .hero h1 {
-  margin: 22px auto 0; max-width: 14ch;
+  margin: 18px auto 0; max-width: 14ch;
   font-family: var(--font-serif); font-weight: 500;
-  font-size: clamp(42px, 6.6vw, 74px); line-height: 0.98; letter-spacing: -0.035em;
+  font-size: clamp(36px, 5.2vw, 58px); line-height: 0.98; letter-spacing: -0.035em;
   text-wrap: balance;
 }
 .evr-landing .hero h1 em { font-style: normal; }
 .evr-landing .hero p.sub {
-  margin: 22px auto 0; max-width: 34rem;
-  font-size: clamp(15.5px, 1.8vw, 18px); line-height: 1.5; color: var(--ink-2);
+  margin: 16px auto 0; max-width: 32rem;
+  font-size: clamp(15px, 1.6vw, 16.5px); line-height: 1.5; color: var(--ink-2);
   text-wrap: pretty;
 }
-.evr-landing .hero-cta { margin-top: 28px; display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; }
-.evr-landing .hero-note { margin: 18px auto 0; max-width: 40rem; font-size: 14px; line-height: 1.5; color: var(--ink-3); text-wrap: pretty; }
+.evr-landing .hero-cta { margin-top: 22px; display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; }
+.evr-landing .hero-note { margin: 14px auto 0; max-width: 40rem; font-size: 13.5px; line-height: 1.5; color: var(--ink-3); text-wrap: pretty; }
 
 /* connector — Strava → Claude */
 .evr-landing .connector { margin-top: 56px; }
@@ -641,14 +641,14 @@
 .evr-landing .btn { font-size: 13px; padding: 9px 15px; }
 
   /* hero */
-.evr-landing .hero { padding: 104px 20px 28px; }
+.evr-landing .hero { padding: 88px 20px 22px; }
 .evr-landing .hero-bloom { width: 130%; height: 420px; top: -20px; }
 .evr-landing .cta-bloom { left: 0; right: 0; }
-.evr-landing .hero h1 { font-size: clamp(38px, 12vw, 52px); line-height: 1.0; letter-spacing: -0.03em; max-width: 16ch; }
-.evr-landing .hero p.sub { margin-top: 22px; font-size: 14.5px; line-height: 1.5; }
+.evr-landing .hero h1 { font-size: clamp(34px, 10vw, 44px); line-height: 1.0; letter-spacing: -0.03em; max-width: 16ch; }
+.evr-landing .hero p.sub { margin-top: 16px; font-size: 14.5px; line-height: 1.5; }
 .evr-landing .eyebrow { font-size: 11.5px; white-space: normal; text-align: center; line-height: 1.5; }
 .evr-landing .eyebrow .live { white-space: nowrap; }
-.evr-landing .hero-cta { margin-top: 26px; }
+.evr-landing .hero-cta { margin-top: 22px; }
 .evr-landing .hero-cta .btn-lg { padding: 15px 26px; }
 .evr-landing .hero-note { font-size: 13.5px; }
 

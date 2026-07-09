@@ -102,6 +102,16 @@ export default async function MCPPage({
         </p>
       </div>
 
+      {/* ── Walkthrough video ───────────────────────────────────────────── */}
+      <video
+        className="w-full max-w-2xl rounded-2xl border border-neutral-200 shadow-sm"
+        autoPlay
+        muted
+        loop
+        playsInline
+        src="/mcp-tutorial.mp4"
+      />
+
       {/* ── Prerequisite: Strava ──────────────────────────────────────── */}
       {stravaConnected ? (
         <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13.5px] text-emerald-800">

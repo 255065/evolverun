@@ -2,14 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { loadActivitySummary } from "./actions";
-import {
-  connectProviderAction,
-  disconnectProviderAction,
-  getConnectionStatus,
-} from "./connections/actions";
+import { disconnectProviderAction, getConnectionStatus } from "./connections/actions";
 import { getConnectorStatus, listKeys } from "./mcp/actions";
 import { CopyButton } from "./copy-button";
 import { LatestActivityCard } from "./latest-activity-card";
+import { PixelTrack } from "@/components/pixel-track";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +19,15 @@ const QUICK_PROMPTS = [
   "Write me a 12-week marathon plan based on my last 3 months of data.",
 ];
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  // Stripe sends a paid checkout back to /dashboard?checkout=success (see
+  // backend billing.py). That landing is our subscription conversion — fire the
+  // Meta Pixel "Purchase" event there so ad campaigns can optimise for real subs.
+  const { checkout } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -46,6 +51,9 @@ export default async function DashboardPage() {
 
   return (
     <>
+      {checkout === "success" && (
+        <PixelTrack event="Purchase" params={{ currency: "EUR" }} scrubQuery />
+      )}
       <h1 className="evr-headline text-[clamp(40px,6vw,64px)] leading-[1] tracking-[-0.03em]">
         Dashboard
       </h1>
@@ -110,15 +118,16 @@ export default async function DashboardPage() {
               </form>
             </div>
           ) : (
-            <form action={connectProviderAction}>
-              <input type="hidden" name="provider" value="strava" />
-              <button
-                type="submit"
-                className="rounded-md bg-neutral-950 px-3.5 py-1.5 text-[13px] font-medium text-white hover:bg-neutral-800"
-              >
-                Connect
-              </button>
-            </form>
+            // Plain <a>, not <Link>: /connect/[provider] is a route handler, so
+            // we need a full navigation to follow its redirect to Strava's
+            // external authorize URL (and avoid <Link> prefetch firing it early).
+            // eslint-disable-next-line @next/next/no-html-link-for-pages
+            <a
+              href="/connect/strava"
+              className="rounded-md bg-neutral-950 px-3.5 py-1.5 text-[13px] font-medium text-white hover:bg-neutral-800"
+            >
+              Connect
+            </a>
           )
         }
       />

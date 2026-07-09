@@ -2,16 +2,24 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { trackPixel } from "@/components/meta-pixel";
 import { signupAction, type AuthState } from "../actions";
 
 const initialState: AuthState = { error: null };
 
 export default function SignupPage() {
   const [state, formAction, pending] = useActionState(signupAction, initialState);
+
+  // Signup succeeded once the confirmation-email screen shows. Report it to the
+  // Meta Pixel as a "CompleteRegistration" — a useful mid-funnel conversion to
+  // optimise ads toward while paid subscriptions are still too sparse to bid on.
+  useEffect(() => {
+    if (state.emailSent) trackPixel("CompleteRegistration");
+  }, [state.emailSent]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#fbfaf7] px-4 text-neutral-950">

@@ -41,8 +41,10 @@ from app.services.workouts import upsert_activities, upsert_daily_metrics
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/providers", tags=["providers"])
 
-# How far back to pull on first connect.
-INITIAL_SYNC_DAYS = 90
+# How far back to pull on first connect. Strava returns only the activities
+# that actually exist in the window, so users with less than a year of data
+# simply get less.
+INITIAL_SYNC_DAYS = 365
 
 
 class AuthorizeResponse(BaseModel):

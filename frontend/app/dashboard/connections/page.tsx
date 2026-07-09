@@ -1,10 +1,6 @@
 import Link from "next/link";
 import { fmtRelative } from "@/lib/format";
-import {
-  connectProviderAction,
-  disconnectProviderAction,
-  getConnectionStatus,
-} from "./actions";
+import { disconnectProviderAction, getConnectionStatus } from "./actions";
 
 type Provider = {
   id: string;
@@ -159,15 +155,12 @@ export default async function ConnectionsPage({
                     Connect {p.name}
                   </Link>
                 ) : (
-                  <form action={connectProviderAction}>
-                    <input type="hidden" name="provider" value={p.id} />
-                    <button
-                      type="submit"
-                      className="inline-flex items-center justify-center rounded-md bg-neutral-950 px-4 py-2 text-[13px] font-medium text-white hover:bg-neutral-800"
-                    >
-                      Connect {p.name}
-                    </button>
-                  </form>
+                  <a
+                    href={`/connect/${p.id}`}
+                    className="inline-flex items-center justify-center rounded-md bg-neutral-950 px-4 py-2 text-[13px] font-medium text-white hover:bg-neutral-800"
+                  >
+                    Connect {p.name}
+                  </a>
                 )}
               </div>
             </div>
