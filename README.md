@@ -46,8 +46,8 @@ Conceptually, the architecture looked like this:
        │       │
        ▼       ▼
 ┌──────────┐ ┌──────────────┐
-│PostgreSQL│ │ Training API │
-│ /Supabase│ │    / Data    │
+│PostgreSQL│ │ Strava  API │
+│ /Supabase│ │              │
 └──────────┘ └──────────────┘
 ```
 
