@@ -2,7 +2,8 @@
 
 **EvolveRun** is a self-developed AI platform for endurance athletes. It combines training data, APIs, databases, LLMs and MCP to make personal training data available for AI analysis.
 
-> **Project status:** EvolveRun is no longer active because I no longer have access to the Strava API.
+> **Project status:** EvolveRun is still operational. It has not been commercialized because Strava’s API terms restrict third-party use of user data for AI analysis.
+
 
 ## What is EvolveRun?
 
