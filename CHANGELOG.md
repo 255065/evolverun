@@ -11,6 +11,8 @@ mirror of git history — see `CLAUDE.md` for what to log and what to skip.
 ## [Unreleased]
 
 ### Changed
+- **Onboarding: "Later" option on the Connect Strava step.** Users can skip
+  straight to the plans and connect Strava afterwards from Connections.
 - **Initial Strava sync now pulls up to a full year** (was 90 days). Onboarding
   can now show "1 year of history" for athletes who have it; those with less
   simply get what exists.
