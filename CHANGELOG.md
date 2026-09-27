@@ -14,6 +14,14 @@ mirror of git history — see `CLAUDE.md` for what to log and what to skip.
 - **Initial Strava sync now pulls up to a full year** (was 90 days). Onboarding
   can now show "1 year of history" for athletes who have it; those with less
   simply get what exists.
+- **Pro plans can be set to 0 kr.** New live Stripe prices (0 DKK/month and
+  0 DKK/year, recurring). Checkout now only asks for a card when there's
+  something to charge, and the plan picker hides "save ~%" instead of showing
+  "NaN%" when both plans are free.
+
+### Ops
+- To switch to the 0 kr. prices: set `STRIPE_PRICE_ID=price_1UKMpN3Ia3tUnKZgkVXUVF6e`
+  and `STRIPE_PRICE_ID_YEARLY=price_1UKMqW3Ia3tUnKZg1uPNytGH` on Railway.
 
 ### Fixed
 - **Landing-page chat demo no longer auto-plays on load.** On large/tall desktop

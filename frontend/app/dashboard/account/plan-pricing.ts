@@ -24,6 +24,7 @@ export function monthlyEquivalentCents(yearlyCents: number): number {
 }
 
 export function savingsPercent(monthlyCents: number, yearlyCents: number): number {
+  if (monthlyCents <= 0) return 0; // free monthly plan → nothing to save, avoid NaN
   return Math.round((1 - yearlyCents / (monthlyCents * 12)) * 100);
 }
 

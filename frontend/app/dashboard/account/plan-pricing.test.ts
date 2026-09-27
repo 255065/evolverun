@@ -28,6 +28,10 @@ describe("savingsPercent", () => {
   it("computes ~28% for €7.99/mo vs €69/yr", () => {
     expect(savingsPercent(799, 6900)).toBe(28);
   });
+
+  it("returns 0 instead of NaN when both plans are free", () => {
+    expect(savingsPercent(0, 0)).toBe(0);
+  });
 });
 
 describe("derivePlanDisplay", () => {
