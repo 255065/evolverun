@@ -150,6 +150,8 @@ def create_checkout_session(
         success_url=success_url,
         cancel_url=cancel_url,
         allow_promotion_codes=True,
+        # Only ask for a card when there is something to charge (0 kr. plans skip it).
+        payment_method_collection="if_required",
         # Persist the supabase user id on the session metadata so the
         # webhook can find the right profile row even if customer mapping
         # is somehow lost.

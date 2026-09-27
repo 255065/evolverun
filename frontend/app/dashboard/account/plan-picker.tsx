@@ -50,7 +50,7 @@ export async function PlanPicker() {
           <span className="text-[14px] text-neutral-500">/ month</span>
         </div>
         <p className="mt-1 text-[13px] font-medium text-emerald-700">
-          {price.yearlyTotal} billed yearly · save ~{price.savingsPercent}%
+          {price.yearlyTotal} billed yearly{price.savingsPercent > 0 && ` · save ~${price.savingsPercent}%`}
         </p>
         <p className="mt-2 text-[13.5px] text-neutral-600">Best for year-round training.</p>
         <ul className="mt-4 space-y-2 text-[13.5px] text-neutral-700">
