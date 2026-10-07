@@ -150,3 +150,78 @@ async def test_event_accepted_without_token(monkeypatch):
     )
     assert result == {"status": "received"}
     assert len(bt.tasks) == 1
+
+
+# --- Personal Garmin sync trigger -------------------------------------------
+
+
+def _garmin_settings(monkeypatch, athlete=OWNER_ID):
+    monkeypatch.setattr(
+        providers,
+        "get_settings",
+        lambda: SimpleNamespace(
+            strava_webhook_verify_token=WEBHOOK_TOKEN,
+            garmin_sync_github_token="gh-token",
+            garmin_sync_repo="owner/garmin-data",
+            garmin_sync_strava_athlete_id=str(athlete),
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_create_triggers_garmin_sync_for_configured_athlete(monkeypatch, known_user):
+    _garmin_settings(monkeypatch)
+    bt = BackgroundTasks()
+    await providers.strava_webhook_event(_FakeRequest(_event()), bt)
+
+    funcs = [t.func for t in bt.tasks]
+    assert providers._trigger_garmin_sync in funcs
+    assert providers._ingest_strava_activity in funcs  # normal ingest unchanged
+    trigger = next(t for t in bt.tasks if t.func is providers._trigger_garmin_sync)
+    assert trigger.kwargs == {"repo": "owner/garmin-data", "token": "gh-token", "activity_id": str(ACTIVITY_ID)}
+
+
+@pytest.mark.asyncio
+async def test_garmin_sync_triggers_even_without_evolverun_user(monkeypatch):
+    _garmin_settings(monkeypatch)
+    monkeypatch.setattr(providers, "find_user_by_provider_id", lambda **k: None)
+    bt = BackgroundTasks()
+    result = await providers.strava_webhook_event(_FakeRequest(_event()), bt)
+    assert result == {"status": "ignored"}
+    assert [t.func for t in bt.tasks] == [providers._trigger_garmin_sync]
+
+
+@pytest.mark.asyncio
+async def test_garmin_sync_not_triggered_for_update_or_other_athlete(monkeypatch, known_user):
+    _garmin_settings(monkeypatch, athlete=999)
+    bt = BackgroundTasks()
+    await providers.strava_webhook_event(_FakeRequest(_event()), bt)
+    assert providers._trigger_garmin_sync not in [t.func for t in bt.tasks]
+
+    _garmin_settings(monkeypatch)
+    bt = BackgroundTasks()
+    await providers.strava_webhook_event(_FakeRequest(_event(aspect_type="update")), bt)
+    assert providers._trigger_garmin_sync not in [t.func for t in bt.tasks]
+
+
+@pytest.mark.asyncio
+async def test_trigger_posts_repository_dispatch(monkeypatch):
+    calls = {}
+
+    class _Resp:
+        status_code = 204
+        text = ""
+
+    class _Client:
+        def __init__(self, **kw): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        async def post(self, url, headers, json):
+            calls.update(url=url, headers=headers, json=json)
+            return _Resp()
+
+    monkeypatch.setattr(providers.httpx, "AsyncClient", _Client)
+    await providers._trigger_garmin_sync(repo="owner/garmin-data", token="gh-token", activity_id="42")
+    assert calls["url"] == "https://api.github.com/repos/owner/garmin-data/dispatches"
+    assert calls["headers"]["Authorization"] == "Bearer gh-token"
+    assert calls["json"]["event_type"] == "garmin-workout"

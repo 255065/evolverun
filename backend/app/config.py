@@ -50,6 +50,13 @@ class Settings(BaseSettings):
     strava_client_id: str = ""
     strava_client_secret: str = ""
     strava_webhook_verify_token: str = ""
+    # Optional personal hook: when this Strava athlete creates an activity,
+    # start the Garmin → Supabase sync workflow in a GitHub repo
+    # (repository_dispatch, event type "garmin-workout"). Off unless all three
+    # are set. The token only needs Actions/Contents write on that one repo.
+    garmin_sync_github_token: str = ""
+    garmin_sync_repo: str = ""  # e.g. "255065/garmin-data"
+    garmin_sync_strava_athlete_id: str = ""
     garmin_client_id: str = ""
     garmin_client_secret: str = ""
     oura_client_id: str = ""
