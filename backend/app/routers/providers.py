@@ -13,6 +13,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
+import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -415,6 +416,41 @@ async def _ingest_strava_activity(*, user_id: str, activity_id: str) -> None:
         log.warning("Webhook ingest failed for %s/%s: %s", user_id, activity_id, exc)
 
 
+def _garmin_sync_target(owner_id: object) -> tuple[str, str] | None:
+    """Return (repo, token) if this athlete's new activities should trigger the
+    personal Garmin sync workflow, else None. Unset settings → disabled."""
+    settings = get_settings()
+    repo = getattr(settings, "garmin_sync_repo", "")
+    token = getattr(settings, "garmin_sync_github_token", "")
+    athlete = getattr(settings, "garmin_sync_strava_athlete_id", "")
+    if repo and token and athlete and str(owner_id) == str(athlete):
+        return repo, token
+    return None
+
+
+async def _trigger_garmin_sync(*, repo: str, token: str, activity_id: str) -> None:
+    """Background task: fire repository_dispatch so GitHub Actions pulls the
+    new workout from Garmin. Failures are logged only — the 08:00 sync is the
+    safety net."""
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            res = await client.post(
+                f"https://api.github.com/repos/{repo}/dispatches",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/vnd.github+json",
+                    "X-GitHub-Api-Version": "2022-11-28",
+                },
+                json={"event_type": "garmin-workout", "client_payload": {"strava_activity_id": activity_id}},
+            )
+        if res.status_code == 204:
+            log.info("Garmin sync triggered for Strava activity %s", activity_id)
+        else:
+            log.warning("Garmin sync trigger failed: %s %s", res.status_code, res.text[:200])
+    except Exception:  # noqa: BLE001
+        log.exception("Garmin sync trigger failed for Strava activity %s", activity_id)
+
+
 @router.post("/strava/webhook", status_code=200)
 async def strava_webhook_event(
     request: Request, background_tasks: BackgroundTasks
@@ -443,6 +479,13 @@ async def strava_webhook_event(
     activity_id = payload.get("object_id")
     if not owner_id or not activity_id:
         return {"status": "ignored"}
+
+    # Personal Garmin sync trigger — independent of the EvolveRun user lookup
+    # and of whether the Strava API fetch below succeeds.
+    if aspect == "create" and (target := _garmin_sync_target(owner_id)):
+        background_tasks.add_task(
+            _trigger_garmin_sync, repo=target[0], token=target[1], activity_id=str(activity_id)
+        )
 
     user_id = find_user_by_provider_id(provider="strava", provider_user_id=str(owner_id))
     if not user_id:

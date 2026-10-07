@@ -10,6 +10,13 @@ mirror of git history — see `CLAUDE.md` for what to log and what to skip.
 
 ## [Unreleased]
 
+### Ops
+- **Strava webhook can trigger a personal Garmin sync.** When the configured
+  athlete creates an activity, the backend fires a GitHub `repository_dispatch`
+  (`garmin-workout`) so a separate workflow pulls the workout from Garmin into
+  Supabase. Off unless `GARMIN_SYNC_GITHUB_TOKEN`, `GARMIN_SYNC_REPO` and
+  `GARMIN_SYNC_STRAVA_ATHLETE_ID` are set; works even while Strava API fetches fail.
+
 ### Changed
 - **Onboarding: "Later" option on the Connect Strava step.** Users can skip
   straight to the plans and connect Strava afterwards from Connections.
